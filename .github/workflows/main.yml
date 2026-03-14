@@ -1,0 +1,41 @@
+name: AURA Dependency Restoration
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  aura-run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Step 1: Baseline Check
+        run: |
+          python -m venv baseline_env
+          source baseline_env/bin/bin/activate
+          pip install -r requirements.txt
+          python aura_validation.py
+          deactivate
+
+      - name: Step 2: Standard Upgrade Attack (Expected to fail)
+        run: |
+          python -m venv attack_env
+          source attack_env/bin/activate
+          pip install --upgrade scikit-learn imbalanced-learn
+          # This step is expected to fail validation
+          python aura_validation.py || echo "Validation failed as expected"
+          deactivate
+
+      - name: Step 3: Run AURA Restoration
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          pip install google-genai pypi-simple packaging
+          python dependency_agent.py
