@@ -1,0 +1,6 @@
+numpy
+scipy
+scikit-learn
+sklearn-compat
+joblib
+threadpoolctl
