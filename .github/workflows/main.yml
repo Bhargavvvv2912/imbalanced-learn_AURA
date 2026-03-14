@@ -16,15 +16,15 @@ jobs:
         with:
           python-version: '3.10'
 
-      - name: Step 1: Baseline Check
+      - name: Baseline Check
         run: |
           python -m venv baseline_env
-          source baseline_env/bin/bin/activate
+          source baseline_env/bin/activate
           pip install -r requirements.txt
           python aura_validation.py
           deactivate
 
-      - name: Step 2: Standard Upgrade Attack (Expected to fail)
+      - name: Standard Upgrade Attack (Expected to fail)
         run: |
           python -m venv attack_env
           source attack_env/bin/activate
@@ -33,7 +33,7 @@ jobs:
           python aura_validation.py || echo "Validation failed as expected"
           deactivate
 
-      - name: Step 3: Run AURA Restoration
+      - name: Run AURA Restoration
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
