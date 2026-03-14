@@ -1,41 +1,53 @@
-name: AURA Dependency Restoration
+name: AURA Speed Run - UserAgents (Repo 41)
 
 on:
-  push:
-    branches: [ main ]
   workflow_dispatch:
 
 jobs:
-  aura-run:
+  modernize-useragents:
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
+    permissions:
+      contents: write
 
-      - name: Set up Python
+    steps:
+      - name: 📂 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: 🐍 Set up Python 3.10 #Use the python version compatible for your python project
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
 
-      - name: Baseline Check
+      - name: 🧪 1. Run Pip Baseline 
         run: |
           python -m venv baseline_env
-          source baseline_env/bin/activate
-          pip install -r requirements.txt
-          python aura_validation.py
-          deactivate
+          ./baseline_env/bin/pip install --upgrade pip
+          ./baseline_env/bin/pip install -r requirements.txt
+          ./baseline_env/bin/python aura_validation.py
 
-      - name: Standard Upgrade Attack (Expected to fail)
+      - name: 💥 2. Run Pip Upgrade 
+        continue-on-error: true
         run: |
-          python -m venv attack_env
-          source attack_env/bin/activate
-          pip install --upgrade scikit-learn imbalanced-learn
-          # This step is expected to fail validation
-          python aura_validation.py || echo "Validation failed as expected"
-          deactivate
+          python -m venv upgrade_env
+          ./upgrade_env/bin/pip install --upgrade pip
+          ./upgrade_env/bin/pip install -r primary_requirements.txt
+          ./upgrade_env/bin/python aura_validation.py
 
-      - name: Run AURA Restoration
+      - name: 🤖 3. Run AURA Agent 
+        run: |
+          python -m venv --system-site-packages aura_env
+          ./aura_env/bin/pip install google-genai google-api-core pypi-simple packaging pip-tools
+          ./aura_env/bin/python -u dependency_agent.py | tee aura_ua_execution.log
         env:
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }} # enter the gemini or any LLM api key in your repository secrets
+
+      - name: 💾 Final Commit & Close Dataset
+        if: always()
         run: |
-          pip install google-genai pypi-simple packaging
-          python dependency_agent.py
+          git config --global user.name 'AURA Agent'
+          git config --global user.email 'aura-agent@users.noreply.github.com'
+          git add requirements.txt aura_ua_execution.log
+          if ! git diff --staged --quiet; then
+            git commit -m "🤖 [ASE-2026] REPO 41/35: Modernized UserAgents [skip ci]"
+            git push
+          fi
